@@ -1,0 +1,786 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>AZZY & KEIII</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: one centered column. Header with language + music, a 16:9 pixel stage, a dialogue box below.
+   Deliberately single-theme: a twilight arcade look, so every color is set explicitly. */
+:root{
+  --night:#1c1433;
+  --night2:#2a1f4a;
+  --line:#4b3b7a;
+  --paper:#fff3e6;
+  --rose:#ff6f91;
+  --rose-d:#c9456b;
+  --gold:#ffc857;
+  --sky:#6fa0ff;
+  --soft:#cfc3ee;
+  --font-title:'Press Start 2P','Courier New',monospace;
+  --font-body:'Pixelify Sans','Courier New',monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--night);color:var(--paper);
+  font-family:var(--font-body);font-size:18px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:16px;
+}
+.game{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-family:var(--font-title);font-size:12px;color:var(--rose);letter-spacing:.04em}
+.brand b{color:var(--paper);font-weight:400}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.pill{
+  font-family:var(--font-title);font-size:10px;line-height:1;
+  background:var(--night2);color:var(--paper);border:3px solid var(--line);
+  padding:9px 10px;cursor:pointer;border-radius:0;
+}
+.pill[aria-pressed="true"]{background:var(--rose);border-color:var(--paper);color:var(--night)}
+.pill:focus-visible,.btn:focus-visible,.choice:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.stage-wrap{
+  position:relative;aspect-ratio:16/9;width:100%;
+  border:4px solid var(--paper);background:#000;
+  box-shadow:0 0 0 4px var(--night2),8px 8px 0 4px rgba(0,0,0,.55);
+  cursor:pointer;
+}
+canvas.stage{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.chip{
+  position:absolute;left:8px;top:8px;max-width:calc(100% - 130px);
+  font-family:var(--font-title);font-size:9px;line-height:1.5;
+  background:rgba(28,20,51,.85);color:var(--paper);padding:6px 8px;border:2px solid var(--paper);
+}
+.hud{
+  position:absolute;right:8px;top:8px;display:flex;gap:3px;
+  background:rgba(28,20,51,.85);padding:5px 6px;border:2px solid var(--paper);
+}
+.hud canvas{width:17px;height:15px;image-rendering:pixelated}
+.overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;text-align:center;padding:12px;
+  background:linear-gradient(rgba(28,20,51,.55),rgba(28,20,51,.8));
+}
+.big{
+  font-family:var(--font-title);font-size:clamp(14px,4.6vw,32px);line-height:1.5;
+  color:var(--paper);text-shadow:3px 3px 0 var(--rose-d);text-wrap:balance;
+}
+.big canvas{width:1.1em;height:.95em;image-rendering:pixelated;vertical-align:baseline;margin:0 .15em}
+.tag{margin:0;font-size:clamp(14px,2.8vw,20px);max-width:34ch;text-wrap:balance}
+.btn{
+  font-family:var(--font-title);font-size:12px;background:var(--rose);color:var(--night);
+  border:3px solid var(--paper);padding:12px 18px;cursor:pointer;border-radius:0;
+  box-shadow:4px 4px 0 var(--rose-d);
+}
+.btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--rose-d)}
+
+.dialog{
+  position:relative;background:var(--night2);border:4px solid var(--paper);
+  box-shadow:8px 8px 0 rgba(0,0,0,.55);
+  padding:24px 18px 18px;min-height:168px;cursor:pointer;
+  display:flex;flex-direction:column;gap:12px;
+}
+.who{
+  position:absolute;top:-17px;left:12px;font-family:var(--font-title);font-size:10px;
+  padding:7px 10px;border:3px solid var(--paper);color:var(--night);
+}
+.who.az{background:var(--sky)}
+.who.ke{background:var(--rose)}
+.txt{margin:0;font-size:clamp(18px,3.4vw,22px);min-height:3.9em;max-width:62ch;text-wrap:pretty}
+.txt.narr{color:var(--soft)}
+.next{
+  position:absolute;right:16px;bottom:14px;width:0;height:0;
+  border-left:11px solid var(--gold);border-top:8px solid transparent;border-bottom:8px solid transparent;
+  animation:blink 1s steps(2) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+.choices{display:grid;gap:10px}
+.choice{
+  font-family:var(--font-body);font-size:clamp(17px,3.2vw,21px);line-height:1.3;text-align:left;
+  background:var(--night);color:var(--paper);border:3px solid var(--rose);
+  padding:11px 13px;cursor:pointer;border-radius:0;
+}
+.choice:hover{background:var(--rose);color:var(--night)}
+.hint{margin:0;font-size:14px;color:var(--soft);text-align:center}
+@media (prefers-reduced-motion:reduce){.next{animation:none}}
+</style>
+
+<main class="game">
+  <header>
+    <div class="brand">AZZY <b>&amp;</b> KEIII</div>
+    <div class="tools" role="group" aria-label="Language">
+      <button class="pill" data-lang="en" aria-label="English" aria-pressed="true">EN</button>
+      <button class="pill" data-lang="tl" aria-label="Tagalog" aria-pressed="false">TL</button>
+      <button class="pill" data-lang="de" aria-label="Deutsch" aria-pressed="false">DE</button>
+      <button class="pill" id="mus" aria-pressed="false">Music</button>
+    </div>
+  </header>
+
+  <div class="stage-wrap" id="wrap">
+    <canvas class="stage" id="stage" width="192" height="108" role="img" aria-label="Pixel art scene"></canvas>
+    <div class="chip" id="chip" hidden></div>
+    <div class="hud" id="hud" hidden></div>
+
+    <div class="overlay" id="title">
+      <div class="big"><span>AZZY</span><canvas id="th" width="7" height="6"></canvas><span>KEIII</span></div>
+      <p class="tag" id="tagline"></p>
+      <button class="btn" id="start"></button>
+    </div>
+
+    <div class="overlay" id="endcard" hidden>
+      <div class="big" id="endTitle"></div>
+      <p class="tag" id="endSub"></p>
+      <button class="btn" id="again"></button>
+    </div>
+  </div>
+
+  <section class="dialog" id="dlg">
+    <div class="who" id="who" hidden></div>
+    <p class="txt" id="txt"></p>
+    <div class="choices" id="choices" hidden></div>
+    <div class="next" id="next" hidden></div>
+  </section>
+  <p class="hint" id="hint"></p>
+</main>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- text ---------- */
+const UI={
+  en:{start:'Start',tagline:'A pixel love story in six chapters',hint:'Tap the box or press Space to continue',choose:'What will you do?',end:'The End',endSub:'AZZY and KEIII lived happily ever after.',again:'Play again',chapter:'Chapter',music:'Music',on:'On',off:'Off',
+      ch:['Rainy Evening','Cherry Blossoms','Rooftop Stars','Sunset Sea','Lantern Night','Wedding Day']},
+  tl:{start:'Simulan',tagline:'Isang pixel na kuwento ng pag-ibig sa anim na kabanata',hint:'I-tap ang kahon o pindutin ang Space para magpatuloy',choose:'Ano ang gagawin mo?',end:'Wakas',endSub:'Namuhay nang masaya magpakailanman sina AZZY at KEIII.',again:'Maglaro ulit',chapter:'Kabanata',music:'Musika',on:'Bukas',off:'Patay',
+      ch:['Maulang Gabi','Mga Sakura','Mga Bituin sa Bubungan','Dagat sa Paglubog ng Araw','Gabi ng mga Parol','Araw ng Kasal']},
+  de:{start:'Start',tagline:'Eine Pixel-Liebesgeschichte in sechs Kapiteln',hint:'Tippe auf die Box oder drücke die Leertaste',choose:'Was tust du?',end:'Ende',endSub:'AZZY und KEIII lebten glücklich bis ans Ende ihrer Tage.',again:'Nochmal spielen',chapter:'Kapitel',music:'Musik',on:'An',off:'Aus',
+      ch:['Regnerischer Abend','Kirschblüten','Sterne auf dem Dach','Meer bei Sonnenuntergang','Laternennacht','Hochzeitstag']}
+};
+const T=(en,tl,de)=>({en:en,tl:tl,de:de});
+
+const YES=T(`“Yes! Yes, yes, a thousand times yes!”`,`“Oo! Oo, oo, libong beses na oo!”`,`„Ja! Ja, ja, tausendmal ja!“`);
+
+const CH=[
+ /* 1 */ {scene:'street',from:{az:-16,ke:138},beats:[
+  {t:T(`A rainy evening. AZZY ran for cover under the awning of a tiny café, soaked and a little lost.`,
+       `Maulan ang gabi. Tumakbo si AZZY para sumilong sa bubong ng isang maliit na café, basang-basa at medyo naliligaw.`,
+       `Ein regnerischer Abend. AZZY rannte unter das Vordach eines winzigen Cafés, völlig durchnässt und ein bisschen verloren.`),cast:{az:92}},
+  {t:T(`Someone was already there: a girl with a pink flower pin, holding a book and a single umbrella. Her name tag read KEIII.`,
+       `May tao na roon: isang babaeng may kulay-rosas na bulaklak na pin sa buhok, may hawak na libro at isang payong. Nakasulat sa name tag niya ang KEIII.`,
+       `Jemand stand schon dort: ein Mädchen mit einer rosa Blume im Haar, ein Buch und einen einzigen Regenschirm in der Hand. Auf ihrem Namensschild stand KEIII.`)},
+  {choice:true,who:'AZZY',opts:[
+    {say:true,t:T(`“Hi! Mind if I wait out the rain here?”`,`“Hi! Okay lang ba kung dito ako maghintay na tumila ang ulan?”`,`„Hi! Darf ich hier den Regen abwarten?“`),
+     after:[{who:'KEIII',t:T(`“Of course. You look like you swam here. Come closer, there's room under my umbrella.”`,`“Syempre. Parang lumangoy ka papunta rito. Lumapit ka, may espasyo pa sa ilalim ng payong ko.”`,`„Klar. Du siehst aus, als wärst du hergeschwommen. Komm näher, unter meinem Schirm ist Platz.“`),cast:{az:126}}]},
+    {say:true,t:T(`“I'm AZZY. Can I buy a hot chocolate? I'm dripping on your doorstep.”`,`“Ako si AZZY. Puwede bang bumili ng mainit na tsokolate? Tumutulo na ako sa pintuan ninyo.”`,`„Ich bin AZZY. Kann ich eine heiße Schokolade kaufen? Ich tropfe dir die Türschwelle voll.“`),
+     after:[{who:'KEIII',t:T(`“A hot chocolate? Deal. Come closer first, there's room under my umbrella.”`,`“Mainit na tsokolate? Sige. Lumapit ka muna, may espasyo pa sa ilalim ng payong ko.”`,`„Eine heiße Schokolade? Abgemacht. Komm erst mal näher, unter meinem Schirm ist Platz.“`),cast:{az:126}}]}
+  ]},
+  {who:'KEIII',t:T(`“I'm KEIII. I work here, and I've never seen anyone smile this much while getting rained on.”`,`“Ako si KEIII. Dito ako nagtatrabaho, at wala pa akong nakitang ngumingiti nang ganito habang inuulanan.”`,`„Ich bin KEIII. Ich arbeite hier und habe noch nie jemanden so strahlen sehen, während er im Regen steht.“`)},
+  {who:'AZZY',t:T(`“Then this is the best rain I've ever stood in. I think I'll come back tomorrow, even if it's sunny.”`,`“Kung gayon, ito ang pinakamagandang ulan na naranasan ko. Babalik yata ako bukas, kahit maaraw.”`,`„Dann ist das der schönste Regen, in dem ich je gestanden habe. Ich komme wohl morgen wieder, auch wenn die Sonne scheint.“`)},
+  {t:T(`The rain kept falling. Neither of them wanted it to stop.`,`Patuloy ang ulan. Walang gustong tumigil ito.`,`Der Regen hörte nicht auf. Keiner von beiden wollte, dass er aufhörte.`),cast:{fx:'hearts'}}
+ ]},
+ /* 2 */ {scene:'park',from:{az:-16,ke:-40},beats:[
+  {t:T(`Weeks later, the cherry trees bloomed. AZZY and KEIII walked the same path every evening.`,`Makalipas ang ilang linggo, namukadkad ang mga puno ng sakura. Gabi-gabi, iisang landas ang nilalakad nina AZZY at KEIII.`,`Wochen später blühten die Kirschbäume. AZZY und KEIII gingen jeden Abend denselben Weg.`),cast:{az:70,ke:92}},
+  {who:'KEIII',t:T(`“Look, the petals are falling like pink snow. I wish I could keep one.”`,`“Tingnan mo, parang kulay-rosas na niyebe ang mga talulot. Sana may maitago akong isa.”`,`„Schau, die Blüten fallen wie rosa Schnee. Ich wünschte, ich könnte eine behalten.“`)},
+  {choice:true,who:'AZZY',opts:[
+    {t:T(`Catch a petal and give it to her`,`Saluhin ang isang talulot at ibigay sa kanya`,`Ein Blütenblatt fangen und es ihr schenken`),
+     after:[{t:T(`AZZY caught a petal in midair and laid it in her palm. KEIII pressed it into her little notebook, smiling.`,`Nasalo ni AZZY ang isang talulot sa ere at inilapag sa palad niya. Inipit ito ni KEIII sa maliit niyang kuwaderno, nakangiti.`,`AZZY fing ein Blütenblatt in der Luft und legte es ihr in die Hand. KEIII drückte es lächelnd in ihr kleines Notizbuch.`),cast:{az:80}}]},
+    {t:T(`Take her hand and walk on`,`Hawakan ang kamay niya at maglakad pa`,`Ihre Hand nehmen und weitergehen`),
+     after:[{t:T(`Their fingers fit together as if they had practiced. KEIII didn't let go, and neither did AZZY.`,`Parang sinadya ang pagkakasukat ng mga daliri nila sa isa't isa. Hindi binitiwan ni KEIII, at hindi rin ni AZZY.`,`Ihre Finger passten zusammen, als hätten sie es geübt. KEIII ließ nicht los, und AZZY auch nicht.`),cast:{az:84,ke:96}}]}
+  ]},
+  {who:'KEIII',t:T(`“AZZY... I think this is my favorite place in the world. Because you're in it.”`,`“AZZY... sa tingin ko ito na ang paborito kong lugar sa mundo. Dahil nandito ka.”`,`„AZZY... ich glaube, das ist mein Lieblingsort auf der Welt. Weil du hier bist.“`),cast:{az:84,ke:96,fx:'hearts'}}
+ ]},
+ /* 3 */ {scene:'roof',from:{az:70,ke:104},beats:[
+  {t:T(`One warm night, AZZY brought a blanket up to the rooftop. The city glittered below, and the stars glittered above.`,`Isang mainit na gabi, nagdala si AZZY ng kumot sa bubungan. Kumikislap ang lungsod sa ibaba, at ang mga bituin sa itaas.`,`In einer warmen Nacht brachte AZZY eine Decke aufs Dach. Unten glitzerte die Stadt, oben die Sterne.`)},
+  {t:T(`A shooting star streaked across the sky!`,`May bulalakaw na dumaan sa kalangitan!`,`Eine Sternschnuppe zog über den Himmel!`),cast:{fx:'shoot'}},
+  {who:'KEIII',t:T(`“Quick, make a wish!”`,`“Dali, humiling ka!”`,`„Schnell, wünsch dir was!“`)},
+  {choice:true,who:'AZZY',opts:[
+    {say:true,t:T(`“I wish tonight never ends.”`,`“Sana hindi na matapos ang gabing ito.”`,`„Ich wünsche mir, dass diese Nacht nie endet.“`),
+     after:[{who:'KEIII',t:T(`“Then we'll stay until the sun comes up.”`,`“Kung gayon, magpapaumaga tayo rito.”`,`„Dann bleiben wir, bis die Sonne aufgeht.“`)}]},
+    {say:true,t:T(`“I wish I could make you this happy forever.”`,`“Sana mapasaya kita nang ganito habambuhay.”`,`„Ich wünsche mir, dich für immer so glücklich zu machen.“`),
+     after:[{who:'KEIII',t:T(`“You already do. Every single day.”`,`“Ginagawa mo na. Araw-araw.”`,`„Das tust du schon. Jeden einzelnen Tag.“`)}]}
+  ]},
+  {t:T(`KEIII rested her head on AZZY's shoulder. Somewhere between two stars, they both knew.`,`Isinandal ni KEIII ang ulo niya sa balikat ni AZZY. Sa pagitan ng dalawang bituin, pareho nilang naunawaan.`,`KEIII legte den Kopf an AZZYs Schulter. Irgendwo zwischen zwei Sternen wussten sie es beide.`),cast:{az:88,ke:100,fx:'hearts'}}
+ ]},
+ /* 4 */ {scene:'beach',from:{az:-16,ke:-34},beats:[
+  {t:T(`Summer came. They took the old bus to the sea, just the two of them and a basket of mangoes.`,`Dumating ang tag-init. Sumakay sila sa lumang bus papunta sa dagat, silang dalawa lang at isang basket ng mangga.`,`Der Sommer kam. Sie nahmen den alten Bus ans Meer, nur die beiden und ein Korb voller Mangos.`),cast:{az:76,ke:98}},
+  {choice:true,who:'AZZY',opts:[
+    {t:T(`Draw a heart in the sand`,`Gumuhit ng puso sa buhangin`,`Ein Herz in den Sand zeichnen`),
+     after:[{t:T(`AZZY drew a big heart in the sand and KEIII wrote both their names inside. A wave washed it away, and they laughed. “We'll just draw a better one,” she said.`,`Gumuhit si AZZY ng malaking puso sa buhangin at isinulat ni KEIII ang pangalan nilang dalawa sa loob. Inanod ito ng alon, at nagtawanan sila. “Gagawa na lang tayo ng mas maganda,” sabi niya.`,`AZZY zeichnete ein großes Herz in den Sand und KEIII schrieb beide Namen hinein. Eine Welle spülte es fort, und sie lachten. „Dann malen wir eben ein schöneres“, sagte sie.`),cast:{fx:'heart'}}]},
+    {t:T(`Race into the waves`,`Maghabulan sa alon`,`In die Wellen rennen`),
+     after:[{t:T(`They splashed and chased each other until the sky turned orange. KEIII was breathless, soaked, and glowing.`,`Nagtalsikan at naghabulan sila hanggang sa naging kahel ang langit. Hingal, basa, at nagniningning si KEIII.`,`Sie spritzten und jagten einander, bis der Himmel orange wurde. KEIII war außer Atem, nass und strahlend.`),cast:{az:66,ke:112}}]}
+  ]},
+  {who:'KEIII',t:T(`“AZZY, promise me something. Wherever life takes us, we go together.”`,`“AZZY, mangako ka. Saan man tayo dalhin ng buhay, magkasama tayo.”`,`„AZZY, versprich mir etwas. Wohin das Leben uns auch führt, wir gehen zusammen.“`),cast:{az:86,ke:98,fx:null}},
+  {who:'AZZY',t:T(`“I promise. Always. And I plan to keep that promise for a very long time.”`,`“Pangako. Palagi. At balak kong tuparin ang pangakong iyan nang napakatagal.”`,`„Ich verspreche es. Immer. Und dieses Versprechen habe ich vor, sehr lange zu halten.“`),cast:{fx:'hearts'}}
+ ]},
+ /* 5 */ {scene:'lantern',from:{az:-16,ke:-34},beats:[
+  {t:T(`On the night of the lantern festival, AZZY asked KEIII to walk with him to the old bridge. His heart pounded louder than the drums.`,`Sa gabi ng pista ng mga parol, niyaya ni AZZY si KEIII na maglakad papunta sa lumang tulay. Mas malakas pa sa tambol ang tibok ng puso niya.`,`In der Nacht des Laternenfestes bat AZZY KEIII, mit ihm zur alten Brücke zu gehen. Sein Herz pochte lauter als die Trommeln.`),cast:{az:78,ke:108}},
+  {t:T(`Hundreds of glowing lanterns rose into the sky. AZZY took a small box from his pocket and knelt.`,`Daan-daang kumikinang na parol ang pumailanlang sa langit. Kinuha ni AZZY ang isang maliit na kahon sa bulsa niya at lumuhod.`,`Hunderte leuchtende Laternen stiegen in den Himmel. AZZY nahm eine kleine Schachtel aus der Tasche und kniete nieder.`),cast:{kneel:true}},
+  {who:'AZZY',t:T(`“KEIII, you turned a rainy evening into the best day of my life. Every day since has been better. I want all of them with you.”`,`“KEIII, ginawa mong pinakamagandang araw ng buhay ko ang isang maulang gabi. Mas gumanda pa ang bawat araw mula noon. Gusto ko silang lahat kasama ka.”`,`„KEIII, du hast einen verregneten Abend zum schönsten Tag meines Lebens gemacht. Jeder Tag seitdem war schöner. Ich will sie alle mit dir.“`)},
+  {choice:true,who:'AZZY',opts:[
+    {say:true,t:T(`“KEIII, will you marry me?”`,`“KEIII, pakakasalan mo ba ako?”`,`„KEIII, willst du mich heiraten?“`),
+     after:[{who:'KEIII',t:YES,cast:{kneel:false,az:94,ke:106}}]},
+    {say:true,t:T(`“Will you spend forever with me?”`,`“Makakasama mo ba ako habambuhay?”`,`„Verbringst du die Ewigkeit mit mir?“`),
+     after:[{who:'KEIII',t:YES,cast:{kneel:false,az:94,ke:106}}]}
+  ]},
+  {t:T(`AZZY slipped the ring on her finger. The lanterns glowed brighter, as if the whole sky was celebrating with them.`,`Isinuot ni AZZY ang singsing sa daliri niya. Lalong lumiwanag ang mga parol, parang ang buong langit ay nagdiriwang kasama nila.`,`AZZY steckte ihr den Ring an den Finger. Die Laternen leuchteten heller, als feiere der ganze Himmel mit ihnen.`),cast:{fx:'hearts'}}
+ ]},
+ /* 6 */ {scene:'wedding',from:{az:80,ke:214},beats:[
+  {t:T(`Spring returned, and so did the cherry blossoms. On the wedding day, the garden was full of friends, family, and pink petals.`,`Bumalik ang tagsibol, at bumalik din ang mga sakura. Sa araw ng kasal, puno ng mga kaibigan, pamilya, at kulay-rosas na talulot ang hardin.`,`Der Frühling kehrte zurück, und mit ihm die Kirschblüten. Am Hochzeitstag war der Garten voller Freunde, Familie und rosa Blütenblätter.`)},
+  {t:T(`KEIII walked down the aisle in white. AZZY forgot how to breathe.`,`Naglakad si KEIII sa pasilyo na nakaputi. Nakalimutan ni AZZY kung paano huminga.`,`KEIII schritt in Weiß den Gang entlang. AZZY vergaß zu atmen.`),cast:{ke:102}},
+  {who:'AZZY',t:T(`“I thought I was just running in from the rain that day. I was really running toward you.”`,`“Akala ko noon ay sumisilong lang ako sa ulan. Ang totoo, tumatakbo na pala ako papunta sa iyo.”`,`„Ich dachte damals, ich renne nur vor dem Regen davon. In Wahrheit bin ich auf dich zugerannt.“`)},
+  {who:'KEIII',t:T(`“And I had been keeping room under my umbrella for you my whole life.”`,`“At buong buhay ko palang itinatabi ang espasyo sa ilalim ng payong ko para sa iyo.”`,`„Und ich habe mein ganzes Leben lang Platz unter meinem Schirm für dich freigehalten.“`)},
+  {t:T(`“I do.” “I do.” They said it together, and the whole garden burst into cheers.`,`“Tinatanggap kita.” “Tinatanggap din kita.” Sabay nilang sinabi, at nagpalakpakan ang buong hardin.`,`„Ja, ich will.“ „Ja, ich will.“ Sie sagten es gleichzeitig, und der ganze Garten brach in Jubel aus.`),cast:{az:84,ke:96,fx:'hearts'}},
+  {t:T(`AZZY and KEIII were married, and they lived happily ever after.`,`Ikinasal sina AZZY at KEIII, at namuhay silang masaya magpakailanman.`,`AZZY und KEIII heirateten und lebten glücklich bis ans Ende ihrer Tage.`)}
+ ]}
+];
+
+/* ---------- canvas helpers ---------- */
+const W=192,H=108;
+const cv=document.getElementById('stage');
+const cx=cv.getContext('2d');
+cx.imageSmoothingEnabled=false;
+
+function R(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(Math.round(x),Math.round(y),w,h);}
+function rnd(n){const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+function disk(x0,y0,r,c){cx.fillStyle=c;for(let y=-r;y<=r;y++){const w=Math.floor(Math.sqrt(r*r-y*y));cx.fillRect(Math.round(x0-w),Math.round(y0+y),w*2+1,1);}}
+function hex(c){return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];}
+function mix(a,b,t){const A=hex(a),B=hex(b);return 'rgb('+A.map(function(v,i){return Math.round(v+(B[i]-v)*t);}).join(',')+')';}
+function vgrad(y0,y1,stops,band){
+  band=band||3;
+  for(let y=y0;y<y1;y+=band){
+    const t=(y-y0)/Math.max(1,(y1-y0));
+    let i=0;while(i<stops.length-2&&t>stops[i+1][0])i++;
+    const a=stops[i],b=stops[i+1];
+    const u=Math.min(1,Math.max(0,(t-a[0])/(b[0]-a[0])));
+    R(0,y,W,Math.min(band,y1-y),mix(a[1],b[1],u));
+  }
+}
+function spr(map,pal,x,y){
+  for(let j=0;j<map.length;j++){const row=map[j];
+    for(let i=0;i<row.length;i++){const ch=row[i];if(ch!=='.')R(x+i,y+j,1,1,pal[ch]);}}
+}
+const HM=['.XX.XX.','XXXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'];
+function heart(x,y,c){
+  for(let j=0;j<6;j++)for(let i=0;i<7;i++)if(HM[j][i]==='X')R(x+i,y+j,1,1,c);
+  R(x+1,y+1,1,1,'#ffffff');
+}
+
+/* ---------- sprites (12 x 20) ---------- */
+const SKIN='#f2c4a0';
+const AZ=[
+ '...HHHHHH...','..HHHHHHHH..','..HHSSSSHH..','..HSSSSSSH..','..HSESSESH..','...SSSSSS...','...SSMMSS...','....SSSS....',
+ '..TTTTTTTT..','.TTTTTTTTTT.','.TTTTTTTTTT.','.STTTTTTTTS.','.STTTTTTTTS.','..TTTTTTTT..','..PPPPPPPP..','..PPPPPPPP..',
+ '..PPP..PPP..','..PPP..PPP..','..BBB..BBB..','.BBBB..BBBB.'];
+const AZW=AZ.slice();
+AZW[8]='..TTTWWTTT..';AZW[9]='.TTTTWWTTTT.';AZW[10]='.TTTFWWTTTT.';AZW[11]='.STTTWWTTTS.';AZW[12]='.STTTWWTTTS.';AZW[13]='..TTTWWTTT..';
+const KE=[
+ '...RRRRRR...','..RRRRRKRR..','.RRRSSSSRRR.','.RRSSSSSSRR.','.RRSESSESRR.','.RRSSSSSSRR.','.RRSSMMSSRR.','.RRRRSSRRRR.',
+ '.RRRDDDDRRR.','.RRDDDDDDRR.','.RDDDDDDDDR.','.SDDDDDDDDS.','..DDDDDDDD..','.DDDDDDDDDD.','DDDDDDDDDDDD','DDDDDDDDDDDD',
+ '..SSS..SSS..','..SSS..SSS..','..BBB..BBB..','.BBBB..BBBB.'];
+const KEW=KE.slice();
+KEW[1]='..RKRKRKRR..';KEW[11]='.SDDFFFFDDS.';KEW[12]='..DDDGGDDD..';KEW[15]='LLLLLLLLLLLL';
+const PA={H:'#2b1d1a',S:SKIN,E:'#1a1a2e',M:'#b5524a',T:'#4a78d9',P:'#2f3659',B:'#171717',W:'#ffffff',F:'#e8445a'};
+const PAW=Object.assign({},PA,{T:'#2a2d52',P:'#2a2d52'});
+const PK={R:'#3a1f35',S:SKIN,E:'#1a1a2e',M:'#c4566a',D:'#ee6a8b',B:'#7a2c46',K:'#ffd1e0'};
+const PKW=Object.assign({},PK,{D:'#fff7fb',F:'#ff7aa8',G:'#4fae6a',L:'#e6d6f5'});
+function blinkP(p){return Object.assign({},p,{E:p.S});}
+const PAb=blinkP(PA),PAWb=blinkP(PAW),PKb=blinkP(PK),PKWb=blinkP(PKW);
+
+const GM=['.hhhh.','.sese.','.ssss.','bbbbbb','sbbbbs','bbbbbb','.pppp.','.p..p.','.p..p.','.k..k.'];
+const GH=['#2b1d1a','#6b3a1f','#c9a24a','#1a1a1a','#8a3b2a','#d8d8d8'];
+const GB=['#ff6f91','#7ad7c1','#ffc857','#6fa0ff','#b48cf2','#f08a4b','#8fd18a'];
+function guest(x,y0,i,t,cheer){
+  const jump=cheer&&Math.sin(t*7+i*1.7)>0.55?-2:0;
+  spr(GM,{h:GH[i%GH.length],s:SKIN,e:'#1a1a2e',b:GB[(i*3+1)%GB.length],p:'#3a3f66',k:'#171717'},x,y0+jump);
+}
+
+/* ---------- state ---------- */
+const st={azx:-16,kex:-40,azt:-16,ket:-40,kneel:false,fx:null,speaker:null,typing:false};
+let sceneName='park';
+let TT=0;
+
+function drawCast(g,t,wed){
+  const y0=g-20,blink=(t%3.4)<0.13;
+  const azMove=Math.abs(st.azx-st.azt)>0.8,keMove=Math.abs(st.kex-st.ket)>0.8;
+  const ax=Math.round(st.azx),kx=Math.round(st.kex);
+  R(ax+1,g,10,1,'rgba(0,0,0,0.28)');
+  R(kx+1,g,10,1,'rgba(0,0,0,0.28)');
+  // AZZY
+  const aTalk=(st.speaker==='AZZY'&&st.typing)?(Math.floor(t*9)%2):0;
+  const aBob=azMove?(Math.floor(t*10)%2):0;
+  const apal=wed?(blink?PAWb:PAW):(blink?PAb:PA);
+  const amap=wed?AZW:AZ;
+  if(st.kneel){
+    spr(amap.slice(0,14),apal,ax,y0+4);
+    R(ax+2,y0+18,9,2,apal.P);
+    R(ax,y0+18,3,2,apal.B);
+    R(ax+11,y0+10,4,1,SKIN);
+    R(ax+14,y0+8,5,4,'#2a1530');
+    R(ax+15,y0+9,3,2,'#ffd23f');
+    if(Math.floor(t*3)%2)R(ax+16,y0+5,1,3,'#ffffff');
+  }else{
+    spr(amap,apal,ax,y0-aTalk-aBob);
+  }
+  // KEIII
+  const kTalk=(st.speaker==='KEIII'&&st.typing)?(Math.floor(t*9)%2):0;
+  const kBob=keMove?(Math.floor(t*10)%2):0;
+  spr(wed?KEW:KE,wed?(blink?PKWb:PKW):(blink?PKb:PK),kx,y0-kTalk-kBob);
+  // held hands
+  const lo=Math.min(ax,kx),hi=Math.max(ax,kx);
+  if(!st.kneel&&hi-lo<=12&&hi-lo>0&&!azMove&&!keMove)R(lo+11,y0+11,hi+1-(lo+11),1,SKIN);
+}
+
+function fxHearts(t,g){
+  const mx=(st.azx+st.kex)/2+6;
+  for(let i=0;i<9;i++){
+    const sp=9+rnd(i)*7,ph=(t*sp+rnd(i+3)*60)%64;
+    const x=mx+(rnd(i+11)-0.5)*54+Math.sin(t*2+i)*3,y=g-22-ph;
+    cx.globalAlpha=Math.max(0,Math.min(1,(64-ph)/20));
+    heart(x,y,i%3===0?'#ffd1e0':(i%3===1?'#ff6f91':'#ffc857'));
+  }
+  cx.globalAlpha=1;
+}
+
+/* ---------- scenes ---------- */
+function umbrella(cxu,top,r,handY){
+  for(let dy=0;dy<9;dy++){
+    const hw=Math.round(r*Math.sqrt(1-Math.pow((8-dy)/9,2)));
+    for(let x=-hw;x<=hw;x++)R(cxu+x,top+dy,1,1,(Math.floor((x+r)/6)%2)?'#fff3e6':'#ff6f91');
+  }
+  R(cxu,top-2,1,2,'#c9456b');
+  R(cxu,top+9,1,handY-(top+9),'#6a3a4a');
+}
+
+const BLD=[[0,20,46],[20,16,30],[36,24,54],[60,16,36],[76,22,44],[98,14,30]];
+function bgStreet(t){
+  vgrad(0,82,[[0,'#2b2f66'],[0.55,'#7060ae'],[1,'#f0a0a8']],3);
+  BLD.forEach(function(b){
+    const x=b[0],w=b[1],h=b[2],top=82-h;
+    R(x,top,w,h,'#231c4a');
+    for(let wx=x+3;wx<x+w-3;wx+=6)for(let wy=top+4;wy<76;wy+=7)R(wx,wy,3,4,rnd(wx*7+wy)>0.45?'#ffd56b':'#3b3278');
+  });
+  // cafe
+  R(110,40,82,42,'#5e2e58');
+  R(118,54,30,20,'#2a1530');R(120,56,26,16,'#ffcf70');R(132,56,2,16,'#2a1530');R(120,63,26,2,'#2a1530');
+  R(162,52,18,30,'#2a1530');R(164,54,14,26,'#ffcf70');R(170,54,2,26,'#2a1530');R(164,66,14,2,'#2a1530');
+  R(126,28,28,10,'#c9456b');R(138,30,8,5,'#fff3e6');R(146,31,2,3,'#fff3e6');R(139,35,6,1,'#fff3e6');
+  for(let x=108;x<192;x+=6){
+    const c=(((x-108)/6)%2===0)?'#fff3e6':'#ff6f91';
+    R(x,42,6,8,c);R(x+1,50,4,1,c);
+  }
+  // sidewalk
+  R(0,82,W,26,'#3b3f6e');R(0,82,W,2,'#6b70aa');
+  R(14,96,26,2,'#6d78c0');R(96,100,32,2,'#6d78c0');R(150,94,24,2,'#6d78c0');
+  for(let i=0;i<5;i++){
+    const rp=(t*1.4+i*0.37)%1,x=18+i*36,y=95+(i%3)*5;
+    cx.globalAlpha=0.6*(1-rp);R(x-rp*6,y,rp*12,1,'#b9c4ff');cx.globalAlpha=1;
+  }
+  // lamp
+  R(84,40,2,42,'#14102e');R(80,36,10,5,'#14102e');R(82,41,6,2,'#ffe28a');
+  cx.globalAlpha=0.16;disk(85,44,14,'#ffe28a');cx.globalAlpha=0.1;disk(85,44,24,'#ffe28a');cx.globalAlpha=1;
+}
+function fgStreet(t){
+  const y0=88-20,cxu=Math.round(st.kex)+1,top=y0-14,r=18;
+  cx.globalAlpha=0.75;
+  for(let i=0;i<80;i++){
+    const ty=(t*75+rnd(i+5)*(H+10))%(H+10)-5;
+    const px=(((rnd(i)*(W+40)-ty*0.25)%(W+40))+(W+40))%(W+40)-10;
+    if(px>=cxu-r&&px<=cxu+r&&ty>top)continue;
+    R(px,ty,1,2,'#c3d0ff');R(px-1,ty+2,1,1,'#c3d0ff');
+  }
+  cx.globalAlpha=1;
+  umbrella(cxu,top,r,y0+11);
+}
+
+function tree(x,base,s,t){
+  R(x-2,base-14*s,4,14*s,'#6b4430');
+  const c=base-24*s,sw=Math.round(Math.sin(t*0.8+x)*1);
+  disk(x+sw,c,Math.round(13*s),'#ff9fc0');
+  disk(x-9*s+sw,c+6*s,Math.round(9*s),'#ff9fc0');
+  disk(x+9*s+sw,c+5*s,Math.round(9*s),'#ff9fc0');
+  disk(x-3*s+sw,c-4*s,Math.round(7*s),'#ffc2d6');
+  for(let i=0;i<14;i++)R(x-14*s+rnd(i+x)*28*s,c-10*s+rnd(i+x+9)*24*s,2,2,'#f27ba2');
+}
+function bgPark(t){
+  vgrad(0,60,[[0,'#ffc6d9'],[0.6,'#ffe3cf'],[1,'#fff0d6']],3);
+  disk(150,28,9,'#fff4c2');
+  for(let i=0;i<3;i++){
+    const x=((30+i*70+t*3)%(W+40))-20,y=14+i*9;
+    R(x,y,22,4,'#ffffff');R(x+4,y-3,14,3,'#ffffff');
+  }
+  for(let x=0;x<W;x+=2)R(x,Math.round(50+Math.sin(x/22)*4+Math.sin(x/9)*1.5),2,30,'#c9e3b0');
+  for(let x=0;x<W;x+=2)R(x,Math.round(58+Math.sin(x/17+2)*3),2,30,'#9fd18c');
+  R(0,64,W,44,'#7bc47f');
+  for(let y=64;y<H;y++){const w=14+(y-64)*1.3;R(96-w,y,w*2,1,'#f1dfc0');}
+  for(let i=0;i<26;i++){const x=rnd(i)*W,y=66+rnd(i+40)*40;if(Math.abs(x-96)>14+(y-64)*1.3)R(x,y,1,2,'#5da866');}
+  tree(24,80,1,t);tree(172,82,1.15,t);tree(58,70,0.7,t);
+  // bench + lamp
+  R(140,76,26,2,'#8a5a3c');R(140,82,26,3,'#8a5a3c');R(140,86,26,2,'#8a5a3c');R(142,88,2,5,'#6b4430');R(162,88,2,5,'#6b4430');
+  R(20,60,2,26,'#3b2a4a');R(17,56,8,4,'#3b2a4a');R(19,60,4,2,'#ffe28a');
+}
+function fgPark(t){
+  for(let i=0;i<46;i++){
+    const py=(t*(9+rnd(i)*8)+rnd(i+30)*H)%H;
+    const px=(((rnd(i)*W+Math.sin(t*1.2+i)*7+t*6)%W)+W)%W;
+    R(px,py,rnd(i+9)>0.5?2:1,1,i%4===0?'#ffffff':'#ffc2d6');
+  }
+}
+
+function bgRoof(t){
+  vgrad(0,84,[[0,'#080826'],[0.6,'#1d1850'],[1,'#4b2f7a']],3);
+  for(let i=0;i<80;i++){
+    const x=rnd(i)*W,y=rnd(i+100)*56,on=Math.sin(t*2+i*3)>-0.3;
+    R(x,y,1,1,on?'#ffffff':'#8f86c4');
+  }
+  for(let i=0;i<5;i++){const x=rnd(i+200)*W,y=6+rnd(i+300)*40;if(Math.sin(t*1.5+i*2)>0){R(x,y-1,1,3,'#ffffff');R(x-1,y,3,1,'#ffffff');}}
+  disk(156,22,9,'#fff3c4');R(152,18,3,3,'#e8dca8');R(159,24,3,3,'#e8dca8');R(155,27,2,2,'#e8dca8');
+  for(let x=0;x<W;x+=10){
+    const h=14+rnd(x)*28,top=84-h;
+    R(x,top,10,h,'#14103a');
+    for(let wy=top+3;wy<80;wy+=5)for(let wx=x+2;wx<x+8;wx+=4)if(rnd(x*3+wy+wx)>0.62)R(wx,wy,2,2,(Math.sin(t*0.6+wx+wy)>0.97)?'#14103a':'#ffd56b');
+  }
+  R(0,84,W,24,'#262050');R(0,90,W,18,'#3a3366');R(0,90,W,2,'#5a5290');
+  R(0,80,W,2,'#4b4380');for(let x=2;x<W;x+=12)R(x,80,2,10,'#4b4380');
+  const cols=['#ffd56b','#ff6f91','#7ad7c1'];
+  for(let x=6;x<W;x+=14){
+    const y=76+Math.round(Math.sin(x*0.4)*2),on=Math.floor(t*2+x)%3;
+    R(x,y,2,2,cols[(x/14|0)%3]);
+    if(on===0){cx.globalAlpha=0.25;disk(x+1,y+1,4,cols[(x/14|0)%3]);cx.globalAlpha=1;}
+  }
+  for(let x=64;x<128;x+=4)for(let y=94;y<104;y+=4)R(x,y,4,4,(((x-64)/4+(y-94)/4)%2===0)?'#e8445a':'#ffd1e0');
+}
+function fgRoof(t){
+  if(st.fx==='shoot'){
+    const p=(t*0.55)%1.5;
+    if(p<1){
+      const x=160-110*p,y=4+46*p;
+      for(let k=0;k<14;k++){cx.globalAlpha=1-k/14;R(x+k*2,y-k*1.05,1,1,'#ffffff');}
+      cx.globalAlpha=1;
+    }
+  }
+}
+
+function palm(x,base,t){
+  for(let k=0;k<22;k++)R(x+Math.round(Math.sin(k*0.13)*4),base-k*2,3,2,k%3===0?'#6a4526':'#7d552f');
+  const tx=x+Math.round(Math.sin(21*0.13)*4)+1,ty=base-44;
+  for(let f=0;f<7;f++){
+    const a=-Math.PI*(0.1+0.8*f/6)+Math.sin(t*1.5+f)*0.05;
+    for(let s=1;s<=13;s++)R(tx+Math.cos(a)*s*1.1,ty+Math.sin(a)*s*0.9+s*s*0.035,2,2,s%2?'#2f8f5a':'#3fae6b');
+  }
+  R(tx-2,ty+2,2,2,'#5a3a1a');R(tx+1,ty+3,2,2,'#5a3a1a');
+}
+const HB=['.XX...XX.','XXXX.XXXX','XXXXXXXXX','XXXXXXXXX','.XXXXXXX.','..XXXXX..','...XXX...','....X....'];
+function bgBeach(t){
+  vgrad(0,60,[[0,'#4b3a8c'],[0.4,'#d45f8c'],[0.75,'#ff9e6d'],[1,'#ffd88a']],3);
+  for(let i=0;i<14;i++)R(rnd(i)*W,rnd(i+50)*18,1,1,'rgba(255,255,255,0.6)');
+  disk(96,60,16,'#fff1a8');disk(96,60,12,'#fffbd0');
+  vgrad(60,86,[[0,'#ffb36b'],[0.35,'#e0708f'],[1,'#4a4f9c']],3);
+  for(let k=0;k<7;k++){const w=18-k*2;R(96-w/2+Math.sin(t*2+k)*2,61+k*3,w,1,'#ffe9a0');}
+  cx.globalAlpha=0.5;
+  for(let k=0;k<5;k++)for(let i=0;i<6;i++)R(((i*38+t*(6+k*2)+k*10)%(W+10))-5,64+k*4,6,1,'#ffcf9e');
+  cx.globalAlpha=1;
+  // boat
+  const by=Math.round(Math.sin(t*1.2)*1);
+  R(134,70+by,16,3,'#fff3e6');R(136,73+by,12,1,'#c9456b');R(141,60+by,1,10,'#6a3a4a');
+  for(let r=0;r<10;r++)R(142,61+r+by,1+Math.floor(r*0.7),1,'#ffffff');
+  // sand
+  vgrad(84,H,[[0,'#f9e3b0'],[1,'#e8c586']],4);
+  for(let x=0;x<W;x++){
+    const ey=82+Math.sin(x*0.09+t*1.3)*1.6+Math.sin(t*0.7)*2.2;
+    R(x,ey+2,1,3,'#d4b27a');R(x,ey,1,2,'#fff7ea');
+  }
+  palm(22,104,t);
+  // birds
+  for(let i=0;i<3;i++){
+    const x=((t*7+i*50)%(W+30))-15,y=18+i*9+Math.sin(t*2+i)*2,up=Math.floor(t*4+i)%2;
+    R(x,y,1,1,'#2a1a3a');R(x-1,y+(up?-1:1),1,1,'#2a1a3a');R(x+1,y+(up?-1:1),1,1,'#2a1a3a');
+  }
+  if(st.fx==='heart'){
+    for(let j=0;j<8;j++)for(let i=0;i<9;i++)if(HB[j][i]==='X')R(136+i*2,92+j*2,2,2,'#c9a36a');
+  }
+}
+
+function bgLantern(t){
+  vgrad(0,72,[[0,'#0c0b2a'],[0.7,'#2a1a5e'],[1,'#7a3a7a']],3);
+  for(let i=0;i<40;i++)R(rnd(i)*W,rnd(i+60)*50,1,1,Math.sin(t*2+i)>-0.2?'#ffffff':'#8f86c4');
+  for(let x=0;x<W;x+=2)R(x,Math.round(60+Math.sin(x/18)*5+Math.sin(x/7)),2,20,'#171040');
+  vgrad(72,H,[[0,'#3a2a6e'],[1,'#120d32']],3);
+  const cols=['#ffb347','#ff7a9a','#ffd56b'];
+  for(let i=0;i<26;i++){
+    const sp=4+rnd(i+1)*5,y=100-((t*sp+rnd(i+7)*120)%120),x=rnd(i)*W+Math.sin(t*0.6+i)*5,c=cols[i%3];
+    cx.globalAlpha=0.16;disk(x+2,y+3,8,c);cx.globalAlpha=1;
+    R(x,y,5,6,c);R(x+1,y-1,3,1,'#c9456b');R(x+1,y+1,3,4,'#ffe9a8');R(x+2,y+6,1,2,'#c9456b');
+    if(y<92){cx.globalAlpha=0.2;R(x,90+(92-y)*0.2+4,5,1,c);cx.globalAlpha=1;}
+  }
+  // bridge
+  R(36,76,120,4,'#6b4a5a');R(36,80,120,18,'#4a3550');
+  for(let y=82;y<=98;y++){const hw=38*Math.sqrt(1-Math.pow((y-98)/16,2));R(96-hw,y,hw*2,1,'#241a54');}
+  R(36,68,120,2,'#6b4a5a');for(let x=38;x<156;x+=10)R(x,68,2,8,'#6b4a5a');
+  for(let x=40;x<152;x+=8)R(x,86,1,1,'#3a2a44');
+}
+
+function bgWedding(t){
+  vgrad(0,62,[[0,'#8fd0ff'],[1,'#e6f6ff']],3);
+  for(let i=0;i<3;i++){const x=((20+i*70+t*3)%(W+40))-20,y=12+i*10;R(x,y,24,4,'#ffffff');R(x+5,y-3,14,3,'#ffffff');}
+  for(let x=0;x<W;x+=16){disk(x+8,64,11,'#4caf6d');for(let k=0;k<4;k++)R(x+2+k*3+rnd(x+k)*2,58+rnd(x+k+5)*10,2,2,k%2?'#ff9fc0':'#ffffff');}
+  R(0,64,W,44,'#7cc77f');
+  for(let y=70;y<H;y+=8)R(0,y,W,4,'#86d088');
+  for(let y=64;y<H;y++){const w=6+(y-64)*0.85;R(96-w-1,y,2*w+2,1,'#ffd56b');R(96-w,y,2*w,1,'#d94a6b');}
+  const cheer=st.fx==='hearts';
+  [10,22,34,46,58].forEach(function(x,i){guest(x,60,i,t,cheer);});
+  [128,140,152,164,176].forEach(function(x,i){guest(x,60,i+5,t,cheer);});
+  [16,28,40,52,64].forEach(function(x,i){guest(x,72,i+2,t,cheer);});
+  [122,134,146,158,170].forEach(function(x,i){guest(x,72,i+8,t,cheer);});
+  // arch
+  R(70,34,4,48,'#fff3e6');R(118,34,4,48,'#fff3e6');
+  for(let x=70;x<=122;x++){
+    const y=22+Math.round(12*(1-Math.sqrt(Math.max(0,1-Math.pow((x-96)/26,2)))));
+    R(x,y,1,4,'#fff3e6');
+  }
+  const fc=['#ff9fc0','#ffffff','#e0b0ff','#ff6f91'];
+  for(let x=68;x<=124;x+=3){
+    const y=20+Math.round(12*(1-Math.sqrt(Math.max(0,1-Math.pow((x-96)/26,2)))));
+    R(x,y-1+rnd(x)*3,3,3,fc[(x/3|0)%4]);
+    R(x+1,y+3+rnd(x+3)*4,2,2,'#4fae6a');
+  }
+  for(let y=36;y<80;y+=5){R(69,y,2,2,fc[(y/5|0)%4]);R(121,y+2,2,2,fc[(y/5+1|0)%4]);R(73,y+1,2,2,'#4fae6a');R(117,y+1,2,2,'#4fae6a');}
+}
+function fgWedding(t){
+  for(let i=0;i<50;i++){
+    const py=(t*(8+rnd(i)*8)+rnd(i+30)*H)%H;
+    const px=(((rnd(i)*W+Math.sin(t*1.1+i)*8+t*5)%W)+W)%W;
+    R(px,py,rnd(i+9)>0.5?2:1,1,i%3===0?'#ffffff':'#ffc2d6');
+  }
+}
+
+const SC={
+  street:{g:88,bg:bgStreet,fg:fgStreet,wed:false},
+  park:{g:92,bg:bgPark,fg:fgPark,wed:false},
+  roof:{g:98,bg:bgRoof,fg:fgRoof,wed:false},
+  beach:{g:100,bg:bgBeach,fg:function(){},wed:false},
+  lantern:{g:76,bg:bgLantern,fg:function(){},wed:false},
+  wedding:{g:94,bg:bgWedding,fg:fgWedding,wed:true}
+};
+
+/* ---------- game flow ---------- */
+const $=function(id){return document.getElementById(id);};
+const els={chip:$('chip'),hud:$('hud'),title:$('title'),endcard:$('endcard'),who:$('who'),txt:$('txt'),choices:$('choices'),next:$('next'),
+  hint:$('hint'),tagline:$('tagline'),start:$('start'),again:$('again'),endTitle:$('endTitle'),endSub:$('endSub'),mus:$('mus'),dlg:$('dlg'),wrap:$('wrap'),th:$('th')};
+const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+let lang='en';
+try{const s=localStorage.getItem('azzy-keiii-lang');if(s&&UI[s])lang=s;}catch(e){}
+
+let Q=[],qi=0,hearts=0,playing=false,awaiting=false,chap=0;
+let full='',shown=0,typeStart=0,curBeat=null;
+
+function setScene(name,from){
+  sceneName=name;
+  st.azx=st.azt=from.az;st.kex=st.ket=from.ke;st.kneel=false;st.fx=null;
+}
+function applyCast(c){
+  if('az' in c)st.azt=c.az;
+  if('ke' in c)st.ket=c.ke;
+  if('kneel' in c)st.kneel=c.kneel;
+  if('fx' in c)st.fx=c.fx;
+}
+function drawHeartCanvas(c,on){
+  const g=c.getContext('2d');
+  g.clearRect(0,0,7,6);
+  g.fillStyle=on?'#ff6f91':'#4b3b7a';
+  for(let j=0;j<6;j++)for(let i=0;i<7;i++)if(HM[j][i]==='X')g.fillRect(i,j,1,1);
+}
+function drawHud(){
+  els.hud.innerHTML='';
+  for(let i=0;i<5;i++){
+    const c=document.createElement('canvas');c.width=7;c.height=6;
+    drawHeartCanvas(c,i<hearts);
+    els.hud.appendChild(c);
+  }
+}
+function updChip(){
+  els.chip.textContent=UI[lang].chapter+' '+(chap+1)+' · '+UI[lang].ch[chap];
+}
+function setWho(name){
+  if(!name){els.who.hidden=true;return;}
+  els.who.hidden=false;
+  els.who.textContent=name;
+  els.who.className='who '+(name==='AZZY'?'az':'ke');
+}
+function startType(text,narr){
+  full=text;shown=0;typeStart=performance.now();st.typing=true;
+  els.txt.className='txt'+(narr?' narr':'');
+  els.txt.textContent='';
+}
+function finishType(){
+  st.typing=false;shown=full.length;els.txt.textContent=full;
+}
+function showChoices(b){
+  awaiting=true;st.typing=false;
+  els.txt.className='txt narr';
+  els.txt.textContent=UI[lang].choose;
+  els.next.hidden=true;
+  els.choices.innerHTML='';
+  els.choices.hidden=false;
+  b.opts.forEach(function(o,i){
+    const btn=document.createElement('button');
+    btn.className='choice';
+    btn.textContent=(i+1)+'. '+o.t[lang];
+    btn.addEventListener('click',function(e){e.stopPropagation();choose(i);});
+    els.choices.appendChild(btn);
+  });
+}
+function enter(){
+  const it=Q[qi],b=it.b;
+  curBeat=b;
+  if(it.first){chap=it.ci;setScene(CH[it.ci].scene,CH[it.ci].from);updChip();}
+  if(b.cast)applyCast(b.cast);
+  st.speaker=b.who||null;
+  setWho(b.who||null);
+  if(b.choice){showChoices(b);}
+  else{
+    awaiting=false;
+    els.choices.hidden=true;els.next.hidden=false;
+    startType(b.t[lang],!b.who);
+  }
+}
+function choose(i){
+  if(!awaiting)return;
+  const b=Q[qi].b,opt=b.opts[i],ci=Q[qi].ci,ins=[];
+  hearts=Math.min(5,hearts+1);drawHud();
+  if(opt.say)ins.push({who:'AZZY',t:opt.t});
+  opt.after.forEach(function(x){ins.push(x);});
+  Q.splice.apply(Q,[qi+1,0].concat(ins.map(function(x){return {b:x,ci:ci,first:false};})));
+  awaiting=false;
+  goNext();
+}
+function goNext(){
+  qi++;
+  if(qi>=Q.length){endGame();return;}
+  enter();
+}
+function advance(){
+  if(!playing||awaiting)return;
+  if(st.typing){finishType();return;}
+  goNext();
+}
+function build(){
+  Q=[];
+  CH.forEach(function(c,ci){c.beats.forEach(function(b,bi){Q.push({b:b,ci:ci,first:bi===0});});});
+}
+function startGame(){
+  build();qi=0;hearts=0;playing=true;awaiting=false;
+  els.title.hidden=true;els.endcard.hidden=true;
+  els.chip.hidden=false;els.hud.hidden=false;
+  drawHud();enter();
+}
+function endGame(){
+  playing=false;st.typing=false;
+  hearts=5;drawHud();
+  els.next.hidden=true;els.choices.hidden=true;els.who.hidden=true;
+  els.txt.className='txt narr';els.txt.textContent='';
+  els.endcard.hidden=false;
+  st.speaker=null;
+}
+function applyLang(){
+  const u=UI[lang];
+  document.documentElement.lang=lang;
+  els.tagline.textContent=u.tagline;
+  els.start.textContent=u.start;
+  els.hint.textContent=u.hint;
+  els.endTitle.textContent=u.end;
+  els.endSub.textContent=u.endSub;
+  els.again.textContent=u.again;
+  els.mus.textContent=u.music+': '+(musicOn?u.on:u.off);
+  document.querySelectorAll('[data-lang]').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-lang')===lang?'true':'false');});
+  if(playing){
+    updChip();
+    if(curBeat&&curBeat.choice&&awaiting){showChoices(curBeat);}
+    else if(curBeat&&curBeat.t){full=curBeat.t[lang];finishType();}
+  }
+}
+
+/* ---------- music ---------- */
+let ac=null,musicOn=false,mTimer=null,mStep=0;
+const MEL=[523.25,659.25,783.99,659.25, 698.46,880,1046.5,880, 587.33,698.46,880,698.46, 783.99,987.77,1174.66,987.77];
+const BAS=[130.81,174.61,146.83,196];
+function tone(f,dur,type,vol){
+  const o=ac.createOscillator(),g=ac.createGain(),now=ac.currentTime;
+  o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(vol,now);g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+  o.connect(g);g.connect(ac.destination);o.start(now);o.stop(now+dur);
+}
+function musicTick(){
+  tone(MEL[mStep%16],0.3,'square',0.02);
+  if(mStep%4===0)tone(BAS[(mStep/4|0)%4],1.0,'triangle',0.05);
+  mStep++;
+}
+function toggleMusic(){
+  try{
+    if(!ac){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ac=new AC();}
+    if(ac.resume)ac.resume();
+    musicOn=!musicOn;
+    if(musicOn){mTimer=setInterval(musicTick,300);}else{clearInterval(mTimer);mTimer=null;}
+    els.mus.setAttribute('aria-pressed',musicOn?'true':'false');
+    applyLang();
+  }catch(e){}
+}
+
+/* ---------- events ---------- */
+document.querySelectorAll('[data-lang]').forEach(function(b){
+  b.addEventListener('click',function(){
+    lang=b.getAttribute('data-lang');
+    try{localStorage.setItem('azzy-keiii-lang',lang);}catch(e){}
+    applyLang();
+  });
+});
+els.mus.addEventListener('click',toggleMusic);
+els.start.addEventListener('click',function(e){e.stopPropagation();startGame();});
+els.again.addEventListener('click',function(e){e.stopPropagation();startGame();});
+els.dlg.addEventListener('click',advance);
+els.wrap.addEventListener('click',advance);
+document.addEventListener('keydown',function(e){
+  const tag=(e.target&&e.target.tagName)||'';
+  if(e.key==='1'||e.key==='2'){if(awaiting)choose(e.key==='1'?0:1);return;}
+  if((e.code==='Space'||e.key===' '||e.key==='Enter')&&tag!=='BUTTON'){e.preventDefault();if(playing)advance();}
+});
+
+/* ---------- loop ---------- */
+function move(cur,tar,dt){
+  const d=tar-cur,s=40*dt;
+  return Math.abs(d)<=s?tar:cur+Math.sign(d)*s;
+}
+let last=0;
+function frame(now){
+  const dt=Math.min(0.05,Math.max(0,(now-last)/1000));last=now;
+  TT+=dt;
+  st.azx=move(st.azx,st.azt,dt);
+  st.kex=move(st.kex,st.ket,dt);
+  if(st.typing){
+    const n=reduce?full.length:Math.floor((performance.now()-typeStart)/22);
+    if(n!==shown){shown=Math.min(full.length,n);els.txt.textContent=full.slice(0,shown);}
+    if(shown>=full.length)st.typing=false;
+  }
+  const sc=SC[sceneName];
+  sc.bg(TT);
+  drawCast(sc.g,TT,sc.wed);
+  sc.fg(TT);
+  if(st.fx==='hearts')fxHearts(TT,sc.g);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+(function(){
+  const g=els.th.getContext('2d');g.fillStyle='#ff6f91';
+  for(let j=0;j<6;j++)for(let i=0;i<7;i++)if(HM[j][i]==='X')g.fillRect(i,j,1,1);
+})();
+setScene('park',{az:84,ke:96});
+st.fx='hearts';
+applyLang();
+requestAnimationFrame(function(t){last=t;frame(t);});
+
+})();
+</script>
+
+</body></html>
